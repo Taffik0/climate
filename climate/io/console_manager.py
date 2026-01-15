@@ -1,4 +1,5 @@
 import asyncio
+import threading
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer as TBuffer
 from prompt_toolkit.layout import Layout, HSplit, Window
@@ -13,6 +14,7 @@ from .buffer import Buffer
 class ConsoleManager:
     def __init__(self):
         self.loop = asyncio.new_event_loop()  # только создаём
+        self._started = False
 
         self.input_buffer = TBuffer()
         self.output_lines = []
@@ -50,6 +52,21 @@ class ConsoleManager:
     async def run_app(self):
         with patch_stdout():
             await self.app.run_async()
+
+    def start(self):
+        if self._started:
+            return
+
+        self._started = True
+
+        def runner():
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_until_complete(self.run_app())
+
+        threading.Thread(
+            target=runner,
+            daemon=True
+        ).start()
 
     async def input_async(self, prompt=">>> ") -> str:
         self._prompt = prompt

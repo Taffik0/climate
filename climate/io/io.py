@@ -26,6 +26,8 @@ class IO:
             self.console_manager: "ConsoleManager" = app.console_manager
         else:
             self.console_manager: "ConsoleManager" = ConsoleManager()
+
+        self.console_manager.start()
         if page:
             self.page = page
             self.app = page.app
@@ -130,13 +132,9 @@ def start_console(cm: ConsoleManager):
 
 if __name__ == "__main__":
     io = IO()
-    cm = io.console_manager
-    threading.Thread(
-        target=start_console,
-        args=(cm,),
-        daemon=True
-    ).start()
     time.sleep(0.1)
     io.print("ffffffff")
-    text = io.input("br br", permitted_symbols="1234567890")
-    io.print(text)
+    text = ""
+    while text != "0":
+        text = io.input("br br", permitted_symbols="1234567890")
+        io.print(text)
