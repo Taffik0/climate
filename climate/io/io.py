@@ -1,5 +1,7 @@
+import asyncio
 import os
 
+import threading
 import time
 from typing import Any, TYPE_CHECKING, Optional
 
@@ -24,7 +26,6 @@ class IO:
             self.console_manager: "ConsoleManager" = app.console_manager
         else:
             self.console_manager: "ConsoleManager" = ConsoleManager()
-            self.console_manager.start()
         if page:
             self.page = page
             self.app = page.app
@@ -37,19 +38,30 @@ class IO:
 
         self.incorrect_input_error = incorrect_input_error
 
+    def _input(self, prompt=">>> "):
+        """
+        Синхронно ждём, пока пользователь введёт строку в асинхронном ACM
+        """
+        # future вернётся, когда user нажмёт Enter
+        future = asyncio.run_coroutine_threadsafe(
+            self.console_manager.input_async(prompt),
+            self.console_manager.loop  # loop должен быть запущен
+        )
+        return future.result()
+
     def input(self, input_prefix: str, permitted_symbols: str | None = None):
         if permitted_symbols:
             input_text = ""
             is_valid = False
             while not is_valid:
-                input_text = self.console_manager.input(
+                input_text = self._input(
                     prompt=f"{input_prefix}")
                 is_valid = True
                 for symbol in input_text:
                     is_valid = is_valid and symbol in permitted_symbols
             return input_text
         else:
-            return self.console_manager.input(prompt=f"{input_prefix}")
+            return self._input(prompt=f"{input_prefix}")
 
     def submit(self, query: str = ""):
         return self.input(f"{query} Y/n ") == "Y"
@@ -111,8 +123,19 @@ class IO:
         os.system('cls' if os.name == 'nt' else 'clear')
 
 
+def start_console(cm: ConsoleManager):
+    asyncio.set_event_loop(cm.loop)
+    cm.loop.run_until_complete(cm.run_app())
+
+
 if __name__ == "__main__":
     io = IO()
+    cm = io.console_manager
+    threading.Thread(
+        target=start_console,
+        args=(cm,),
+        daemon=True
+    ).start()
     time.sleep(0.1)
     io.print("ffffffff")
     text = io.input("br br", permitted_symbols="1234567890")
