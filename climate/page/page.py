@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from ..app import App
     from .page_data import PageData
     from .reverse_data import ReverseData
+    from climate.io.commands.command import Command
 
 from ..io.io import IO
 
@@ -18,11 +19,12 @@ class Page:
 
     def __init__(self, app: "App",
                  page_data: InD,
-                 parent: "Page" | None = None,
+                 parent: Optional["Page"] = None,
                  reverse_func: Optional[Callable[[InD, Optional[RD]], None]] = None):
         self.app = app
         self.io = IO(page=self)
-        self.commands: list = []
+        self.commands: list["Command"] = []
+        self.command_prefix: str = "/"
         self.out_prefix = ""
         self.parent = parent
         self.reverse_func = reverse_func

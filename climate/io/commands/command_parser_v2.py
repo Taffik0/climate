@@ -1,6 +1,8 @@
 from typing import Any
 from .command import Command, Flag, WordFlag, ParsedCommand
 
+"""Нахрена это на списках каких-то, надо было на queue делать!"""
+
 
 class CommandParserV2:
     def __init__(self) -> None:
@@ -77,3 +79,10 @@ class CommandParserV2:
                 else:
                     flags_arg[flag] = True
         return flags_arg
+
+
+if __name__ == "__main__":
+    cp = CommandParserV2()
+    commands = [Command(None, "start", [Flag("S", "setup")], [])]
+    command_parsed = cp.parse_commands(commands, "start 123 -S 2 -S 1")
+    print(f"{command_parsed.command.name=} {command_parsed.parameters} {command_parsed.parse_flags}")

@@ -4,7 +4,7 @@ from climate.page.page_exit_exception import PageExit
 
 from .io.console_manager import ConsoleManager
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .page.page import Page
@@ -34,7 +34,7 @@ class App:
     def set_start_page(self, page: "Page"):
         self.start_page = page
 
-    def change_page(self, page: Page | None):
+    def change_page(self, page: Optional["Page"]):
         self.active_page = page
 
     def start(self):
@@ -53,7 +53,7 @@ class App:
         except PageExit:
             pass
 
-    def add_daemon(self, daemon: Daemon):
+    def add_daemon(self, daemon: "Daemon"):
         self.daemons.append(daemon)
         main_thread = Thread(target=daemon.main, daemon=True)
         main_thread.start()

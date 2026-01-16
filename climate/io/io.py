@@ -8,6 +8,8 @@ from typing import Any, TYPE_CHECKING, Optional
 from .template_string import TemplateString
 from .console_manager import ConsoleManager
 from .buffer import Buffer
+from .commands.command_parser_v2 import CommandParserV2
+from .commands.command import Command, ParsedCommand
 
 if TYPE_CHECKING:
     from climate.page.page import Page
@@ -20,6 +22,10 @@ class IO:
                  app: Optional["App"] = None,
                  buffer: Optional["Buffer"] = None):
         self.out_prefix = ""
+        self.incorrect_input_error = incorrect_input_error
+
+        self.global_commands: list["Command"] = []
+        self.global_commands_prefix = "/"
 
         if app:
             self.app = app
@@ -34,11 +40,13 @@ class IO:
 
             self.out_prefix = page.out_prefix
 
+            self.global_commands += page.commands
+            self.global_commands_prefix = page.command_prefix
+            self.command_parser = CommandParserV2()
+
         self.buffer = Buffer()
         if buffer:
             self.buffer = buffer
-
-        self.incorrect_input_error = incorrect_input_error
 
     def _input(self, prompt=">>> "):
         """
@@ -51,19 +59,18 @@ class IO:
         )
         return future.result()
 
-    def input(self, input_prefix: str, permitted_symbols: str | None = None):
-        if permitted_symbols:
-            input_text = ""
-            is_valid = False
-            while not is_valid:
-                input_text = self._input(
-                    prompt=f"{input_prefix}")
-                is_valid = True
-                for symbol in input_text:
-                    is_valid = is_valid and symbol in permitted_symbols
+    def input(self, input_prefix: str, permitted_symbols: str | None = None, check_global_commands: bool = True):
+        while True:
+            input_text = self._input(prompt=f"{input_prefix}")
+
+            if check_global_commands:
+                if self.check_command([], input_text, run_fuc=True):
+                    continue
+
+            if permitted_symbols and not all(symbol in permitted_symbols for symbol in input_text):
+                continue
+
             return input_text
-        else:
-            return self._input(prompt=f"{input_prefix}")
 
     def submit(self, query: str = ""):
         return self.input(f"{query} Y/n ") == "Y"
@@ -123,6 +130,24 @@ class IO:
 
     def clear(self):
         os.system('cls' if os.name == 'nt' else 'clear')
+
+    def check_command(self, commands: list["Command"],
+                      input: str,
+                      global_commands: bool = True,
+                      run_fuc: bool = False) -> ParsedCommand | None:
+        parsed_command = self.command_parser.parse_commands(commands, input)
+
+        if input[:len(self.global_commands_prefix)] == self.global_commands_prefix and global_commands:
+            parsed_command = self.command_parser.parse_commands(
+                self.global_commands, input[len(self.global_commands_prefix):])
+
+        if parsed_command and run_fuc:
+            parsed_command.call()
+        return parsed_command
+
+    def input_command(self, commands: list["Command"], input_prefix: str,  run_command: bool = True) -> Optional["ParsedCommand"]:
+        input_command = self._input(prompt=f"{input_prefix}")
+        return self.check_command(commands, input_command, run_fuc=run_command)
 
 
 def start_console(cm: ConsoleManager):
