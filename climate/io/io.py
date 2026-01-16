@@ -136,5 +136,5 @@ if __name__ == "__main__":
     io.print("ffffffff")
     text = ""
     while text != "0":
-        text = io.input(">>> ")
+        text = io.input(">>>  ")
         io.print(text)

@@ -1,5 +1,7 @@
 from threading import Thread
 
+from climate.page.page_exit_exception import PageExit
+
 from .io.console_manager import ConsoleManager
 
 from typing import TYPE_CHECKING
@@ -46,7 +48,10 @@ class App:
             self._main_loop()
 
     def _main_loop(self):
-        self.active_page.loop()
+        try:
+            self.active_page.loop()
+        except PageExit:
+            pass
 
     def add_daemon(self, daemon: Daemon):
         self.daemons.append(daemon)

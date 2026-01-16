@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Callable, Optional, TypeVar
 
+from climate.page.page_exit_exception import PageExit
+
 if TYPE_CHECKING:
     from ..app import App
     from .page_data import PageData
@@ -40,11 +42,21 @@ class Page:
     def loop(self):
         pass
 
-    def exit(self, reverse_data: Optional[RD] = None) -> None:
+    def exit(self, reverse_data: Optional[RD] = None, stop: bool = True) -> None:
         self.on_exit()
         if callable(self.reverse_func):
             self.reverse_func(self.page_data, reverse_data)
         self.app.change_page(self.parent)
+        if stop:
+            raise PageExit()
 
-    def switch_loop(self, page: "Page"):
+    def switch_page(self, page: "Page", stop: bool = True):
         self.app.change_page(page)
+        if stop:
+            raise PageExit()
+
+    def switch_child_page(self, page: "Page", stop: bool = True):
+        page.parent = self
+        self.app.change_page(page)
+        if stop:
+            raise PageExit()

@@ -1,0 +1,2 @@
+class PageExit(Exception):
+    pass
