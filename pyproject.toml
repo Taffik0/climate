@@ -4,5 +4,5 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "climate"
-version = "0.1.1a1"
+version = "0.1.2a1"
 dependencies = ["prompt_toolkit==3.0.52"]

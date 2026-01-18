@@ -39,9 +39,17 @@ class App:
 
     def start(self):
         if not self.start_page:
+            self.stop()
             return
         self.active_page = self.start_page
+        self.start_page._on_enter()
         self.looping()
+
+    def stop(self):
+        for daemon in self.daemons:
+            daemon.stop()
+        print("exit")
+        exit()
 
     def looping(self):
         while self.active_page:

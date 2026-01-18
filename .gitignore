@@ -31,3 +31,6 @@ Thumbs.db
 # mypy
 .mypy_cache/
 .dmypy.json
+
+# test
+test/

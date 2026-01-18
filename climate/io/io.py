@@ -27,6 +27,8 @@ class IO:
         self.global_commands: list["Command"] = []
         self.global_commands_prefix = "/"
 
+        self.scrollable: bool = False
+
         if app:
             self.app = app
             self.console_manager: "ConsoleManager" = app.console_manager
@@ -44,9 +46,13 @@ class IO:
             self.global_commands_prefix = page.command_prefix
             self.command_parser = CommandParserV2()
 
+            self.scrollable = page.scrollable
+
         self.buffer = Buffer()
         if buffer:
             self.buffer = buffer
+        if self.scrollable:
+            self.console_manager.subscribe_on_scroll(self.scroll)
 
     def _input(self, prompt=">>> "):
         """
@@ -110,12 +116,18 @@ class IO:
             choice = self.input(f"{str(query)}").lower()
         return first_symbols.index(choice), query_list[first_symbols.index(choice)]
 
-    def print(self, text: str | Any, end="\n"):
-        self.buffer.out_text += text + end
+    def print(self, text: str | TemplateString, end: str = "\n"):
+        if isinstance(text, str):
+            self.buffer.add_out_text(text + end)
+        else:
+            self.buffer.add_out_text(text)
+            self.buffer.add_out_text(end)
         self._update_buffer()
 
-    def write(self, text: str | Any, end=""):
-        self.buffer.out_text += text + end
+    def write(self, text: str | TemplateString, end: str = ""):
+        if isinstance(text, str) and isinstance(self.buffer.out_text[-1], str):
+            self.buffer.out_text[-1] += text + end
+        self.print(text, end=end)
         self._update_buffer()
 
     def _update_buffer(self):
@@ -128,8 +140,13 @@ class IO:
         else:
             self.print(f"[{name}] {text}")
 
-    def clear(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+    def clear(self, text: bool = True, bottom: bool = True, top: bool = True):
+        if text:
+            self.buffer.out_text.clear()
+        if bottom:
+            self.buffer.bottom_lines.clear()
+        if top:
+            self.buffer.top_lines.clear()
 
     def check_command(self, commands: list["Command"],
                       input: str,
@@ -149,6 +166,17 @@ class IO:
         input_command = self._input(prompt=f"{input_prefix}")
         return self.check_command(commands, input_command, run_fuc=run_command)
 
+    def scroll(self, movement: int) -> None:
+        self.buffer.offset = max(self.buffer.offset + movement, 0)
+        self._update_buffer()
+
+    def exit(self):
+        self.console_manager.unsubscribe_on_scroll(func=self.scroll)
+
+    def restart(self):
+        if self.scrollable:
+            self.console_manager.subscribe_on_scroll(self.scroll)
+
 
 def start_console(cm: ConsoleManager):
     asyncio.set_event_loop(cm.loop)
@@ -159,7 +187,10 @@ if __name__ == "__main__":
     io = IO()
     time.sleep(0.1)
     io.print("ffffffff")
+    io.print("ffffffff")
+    io.print("ffffffff")
     text = ""
     while text != "0":
         text = io.input(">>>  ")
+        print("h")
         io.print(text)
