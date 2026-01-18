@@ -10,6 +10,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text import ANSI, to_formatted_text
 
 from .buffer import Buffer
 
@@ -29,7 +30,9 @@ class ConsoleManager:
         def get_output_text():
             return "\n".join(self.output_lines)
 
-        output_control = FormattedTextControl(get_output_text)
+        output_control = FormattedTextControl(
+            lambda: self.merge_ansi(self.output_lines)
+        )
         output_window = Window(content=output_control, wrap_lines=True)
 
         input_control = BufferControl(
@@ -66,15 +69,13 @@ class ConsoleManager:
         def scroll_down(event):
             self.call_scroll(-1)
 
-    def get_mouse_handler(self):
-        # это будет замыкание, видит self
-        def handler(mouse_event):
-            if mouse_event.event_type == MouseEventType.SCROLL_UP:
-                self.call_scroll(1)
-            elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                self.call_scroll(-1)
-            return None  # обязательно
-        return handler
+    def merge_ansi(self, lines):
+        fragments = []
+        for i, item in enumerate(lines):
+            fragments.extend(to_formatted_text(item))
+            if i != len(lines) - 1:
+                fragments.append(("", "\n"))
+        return fragments
 
     def subscribe_on_scroll(self, func: Callable[[int], None]) -> int:
         self.scroll_subscribers.append(func)
@@ -115,13 +116,14 @@ class ConsoleManager:
         return await self._input_future
 
     def write(self, text):
-        self.output_lines.append(text)
+        self.output_lines.append(ANSI(text))
         self.app.invalidate()
 
     def draw_buffer(self, buffer: Buffer):
         rows = self.app.output.get_size().rows
         cols = self.app.output.get_size().columns
-        self.output_lines = buffer.get_out_lines(rows, cols)
+        self.output_lines = [ANSI(line)
+                             for line in buffer.get_out_lines(rows, cols)]
         self.app.invalidate()
 
 
