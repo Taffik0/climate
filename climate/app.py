@@ -18,7 +18,6 @@ class App:
         self.start_page: "Page" | None = None
         self.commands: list = []
         self.console_manager = ConsoleManager()
-        self.console_manager.start()
 
         self.daemons: list[Daemon] = []
         self.daemon_process: list[Thread] = []
@@ -41,6 +40,7 @@ class App:
         if not self.start_page:
             self.stop()
             return
+        self.console_manager.start()
         self.active_page = self.start_page
         self.start_page._on_enter()
         self.looping()

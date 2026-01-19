@@ -13,9 +13,9 @@ class TemplateString:
         for match in re.finditer(r"\$\{(.*?)\}", text):
             key = match.group(1)
             agr = args.get(key)
-            if not agr:
+            if agr == None:
                 agr = ""
-            text = text.replace("${"+key+"}", agr)
+            text = text.replace("${"+key+"}", str(agr))
         text = self._parse_colors(text)
         return text
 

@@ -1,75 +1,84 @@
-# CLIMATE - python framework for terminal app
+# CLIMATE - Python framework for terminal apps
 
-⚠️ Статус проекта
+**CliMate** is a framework for building full-screen terminal applications, where the bottom line is reserved for command input, and the rest of the screen is used for output. Suitable for console messengers, text-based RPGs, and live logs.
 
-- Библиотека находится на ранней стадии разработки.
-- API нестабилен и может меняться.
-- Возможны баги и недокументированные особенности.
-- Документация в процессе.
+## Project Status ⚠️
 
-**CliMate** — фреймворк для создания полноэкранных терминальных приложений, где нижняя строка предназначена для ввода команд, а остальная область используется для вывода.
+- The library is in an early stage of development.
+- The API is unstable and subject to change.
+- Bugs and undocumented behaviors may occur.
+- Documentation is a work in progress.
 
-Основные возможности:
+## Key Features
 
-- **Page-based архитектура**  
-   Позволяет строить приложение как последовательность страниц (MenuPage → MainPage → ExitPage), разделяя логику и состояние.
-- **Абстракция ввода-вывода (IO)**  
-   Высокоуровневый интерфейс для вывода и ввода. Можно вызывать `print()` даже во время пользовательского ввода без нарушения состояния консоли.
-- **Daemon-процессы**  
-   Фоновые задачи с возможностью безопасного вывода в консоль, например для отображения состояния процессов.
-- **TemplateString**  
-   Шаблонные строки с плейсхолдерами и ANSI-цветами без ручного форматирования.
+- **Page-based architecture** — a sequence of pages (MenuPage → MainPage → ExitPage) with separation of logic and state.
+- **IO abstraction** — a high-level interface for output and input; you can use `io.print()` during user input without errors.
+- **Daemon processes** — background tasks with safe console output.
+- **TemplateString** — strings with placeholders and ANSI colors without manual formatting.
 
-**CliMate не предназначен для:**
+## CliMate is not intended for
 
-- Создания графических интерфейсов. Кнопок, лейблов и layout-систем нет и не планируется.
-- Рисования произвольной графики. Canvas отсутствует.
-- Управления конфигурацией окна терминала.
-- Замены prompt_toolkit. CliMate использует его как низкоуровневую основу, но решает другую задачу.
+- Creating graphical interfaces, buttons, or labels.
+- Drawing arbitrary graphics (no Canvas support).
+- Managing terminal window configuration.
+- Replacing `prompt_toolkit`; CliMate uses it as a low-level foundation for its functionality.
 
-**TemplateString** позволяет:
+## TemplateString
 
-- использовать плейсхолдеры `${arg-name}`
-- применять ANSI-цвета через `@color` (например `@red`, `@yellow`)
+Allows you to:
 
-Пример:
+- Use placeholders `${arg-name}`
+- Apply ANSI colors via `@color` (`@red`, `@yellow`)
+
+## Examples
+
+### Minimal Page/App example
 
 ```python
-import time
 from climate import App, Page, PageData
-from climate.io import TemplateString
-from climate.daemons import Daemon
-
-
-class WriteDaemon(Daemon):
-    _is_looping = True
-    _interval = 1
-
-    def main(self):
-        self.count = 0
-        self.io.print(TemplateString(
-            "@yellow ${count}x Hello").string({"count": 0}))
-
-    def loop(self):
-        self.count += 1
-        self.io.print(TemplateString(
-            "@yellow ${count}x Hello").string({"count": self.count}))
-
 
 class MainPage(Page):
+    def loop(self):
+        text = self.io.input(">>> ")
+        self.io.print(f"Вы ввели: {text}")
 
-    def on_enter(self):
-        self.io.print("Hello")
-        daemon = WriteDaemon(self.app, self, self.io)
-        self.app.add_daemon(daemon)
+app = App()
+app.set_start_page(MainPage(app, PageData()))
+app.start()
+```
 
-    def init(self):
-        self.scrollable = True
+### TemplateString:
 
-    def loop(self):
-        text = self.io.input(">>>")
-        self.io.print(text)
+```python
+from climate.io import TemplateString
 
+ts = TemplateString("@green Hello, ${name}!", {"name": "Taffik"})
+print(ts.string())
+```
+
+### Example of creating a Daemon on a page
+
+```python
+from climate.daemons import Daemon
+from climate import App, Page, PageData
+from climate.io import TemplateString
+
+class CounterDaemon(Daemon):
+    _is_looping = True
+    _interval = 1
+
+    def main(self):
+        self.count = 0
+
+    def loop(self):
+        self.count += 1
+        self.io.print(TemplateString("@yellow ${count}x Hello").string({"count": self.count}))
+
+class MainPage(Page):
+    def on_enter(self):
+        daemon = CounterDaemon(self.app, self, self.io)
+        self.app.add_daemon(daemon)
+        self.io.print("Daemon запущен!")
 
 app = App()
 app.set_start_page(MainPage(app, PageData()))
