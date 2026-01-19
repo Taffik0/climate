@@ -2,6 +2,8 @@
 
 **CliMate** is a framework for building full-screen terminal applications, where the bottom line is reserved for command input, and the rest of the screen is used for output. Suitable for console messengers, text-based RPGs, and live logs.
 
+See [README in Russian](README_RU.md)
+
 ## Project Status ⚠️
 
 - The library is in an early stage of development.
